@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using HutongGames.PlayMaker;
 using Modding;
 using UnityEngine;
@@ -8,13 +9,11 @@ namespace Darkness
 {
     public class Darkness : Mod, ITogglableMod
     {
-        private const string VERSION = "0.0.2";
-
-        private readonly Dictionary<(string Name, string EventName), string> OriginalTransitions = new Dictionary<(string Name, string EventName), string>();
+        private readonly Dictionary<(string Name, string EventName), string> OriginalTransitions = new ();
 
         private bool _enabled = true;
 
-        public override string GetVersion() => VERSION;
+        public override string GetVersion() => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
         public override void Initialize()
         {
@@ -24,7 +23,7 @@ namespace Darkness
             _enabled = true;
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoad;
-            ModHooks.Instance.HeroUpdateHook += Update;
+            ModHooks.HeroUpdateHook += Update;
         }
 
         public void Unload()
@@ -35,7 +34,7 @@ namespace Darkness
             _enabled = false;
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoad;
-            ModHooks.Instance.HeroUpdateHook -= Update;
+            ModHooks.HeroUpdateHook -= Update;
         }
 
         private void Update()
@@ -52,7 +51,7 @@ namespace Darkness
 
         private void Lighten()
         {
-            if (HeroController.instance == null) return;
+            if (HeroController.UnsafeInstance == null) return;
 
             foreach (FsmState state in HeroController.instance.vignetteFSM.FsmStates)
             {
@@ -71,7 +70,7 @@ namespace Darkness
 
         private void OnSceneLoad(Scene arg0, LoadSceneMode arg1)
         {
-            if (HeroController.instance == null) return;
+            if (HeroController.UnsafeInstance == null) return;
 
             if (!_enabled) return;
 
@@ -82,7 +81,7 @@ namespace Darkness
 
         private void Darken()
         {
-            if (HeroController.instance == null) return;
+            if (HeroController.UnsafeInstance == null) return;
 
             foreach (FsmState state in HeroController.instance.vignetteFSM.FsmStates)
             {
