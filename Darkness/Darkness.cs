@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Reflection;
 using HutongGames.PlayMaker;
+using JetBrains.Annotations;
 using Modding;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Darkness
 {
+    [UsedImplicitly]
     public class Darkness : Mod, ITogglableMod
     {
         private readonly Dictionary<(string Name, string EventName), string> OriginalTransitions = new ();
@@ -22,8 +23,16 @@ namespace Darkness
 
             _enabled = true;
 
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoad;
+            On.GameManager.EnterHero += OnEnterHero;
             ModHooks.HeroUpdateHook += Update;
+        }
+
+        private void OnEnterHero(On.GameManager.orig_EnterHero orig, GameManager self, bool additivegatesearch)
+        {
+            orig(self, additivegatesearch);
+
+            if (_enabled)
+                Darken();
         }
 
         public void Unload()
@@ -33,7 +42,7 @@ namespace Darkness
 
             _enabled = false;
 
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoad;
+            On.GameManager.EnterHero -= OnEnterHero;
             ModHooks.HeroUpdateHook -= Update;
         }
 
@@ -64,24 +73,13 @@ namespace Darkness
             }
 
             HeroController.instance.vignetteFSM.SetState("Normal");
-
             HeroController.instance.vignette.enabled = false;
-        }
-
-        private void OnSceneLoad(Scene arg0, LoadSceneMode arg1)
-        {
-            if (HeroController.UnsafeInstance == null) return;
-
-            if (!_enabled) return;
-
-            Log("Updating hc.vignetteFSM");
-
-            Darken();
         }
 
         private void Darken()
         {
-            if (HeroController.UnsafeInstance == null) return;
+            if (HeroController.instance == null)
+                return;
 
             foreach (FsmState state in HeroController.instance.vignetteFSM.FsmStates)
             {
@@ -110,7 +108,7 @@ namespace Darkness
                     }
                 }
             }
-
+            
             HeroController.instance.vignetteFSM.SetState("Dark 2");
             HeroController.instance.vignette.enabled = true;
         }
